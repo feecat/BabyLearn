@@ -19,25 +19,22 @@ body {
     color: var(--text-color);
     margin: 0;
     padding: 0;
-    min-height: 100dvh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    overscroll-behavior: none;
+    overflow-x: hidden;
 }
 
 .container {
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
-    padding: 15px;
+    padding: 20px;
     flex: 1;
     display: flex;
     flex-direction: column;
     position: relative;
     z-index: 2;
-    height: 100dvh;
-    overflow: hidden;
 }
 
 /* --- 按钮基础修复 --- */
@@ -173,39 +170,29 @@ body {
 .chapter-icon { font-size: 1.8rem; display: block; }
 
 /* --- 游戏区布局 --- */
-#game-screen {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
 .question-area {
-    flex-shrink: 0;
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-size: 3.5rem; /* 字体加大 */
     font-weight: 800;
-    margin: 10px 0;
-    min-height: 100px;
-    max-height: 150px;
-    overflow: hidden;
-    word-break: break-word;
+    margin: 20px 0;
+    min-height: 150px;
 }
 
 /* 选项网格 */
 .options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 15px; /* 增加间距 */
     width: 100%;
-    flex-shrink: 0;
+    margin-bottom: 20px;
 }
 
 .btn-choice {
     font-size: 2rem;
-    padding: 20px 0;
+    padding: 20px 0; /* 增加点击区域 */
     height: 100%;
 }
 
@@ -215,8 +202,7 @@ body {
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     width: 100%;
-    flex-shrink: 0;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 /* 显示框 */
