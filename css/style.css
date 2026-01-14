@@ -114,20 +114,32 @@ body {
 /* 章节卡片网格 */
 .chapter-grid {
     display: grid;
-    grid-template-columns: 1fr; /* 手机单列 */
-    gap: 15px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
     padding-bottom: 40px;
 }
-@media (min-width: 400px) {
-    .chapter-grid { grid-template-columns: 1fr 1fr; } /* 平板/电脑双列 */
+@media (max-width: 500px) {
+    .chapter-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 320px) {
+    .chapter-grid { grid-template-columns: 1fr; }
+}
+
+.chapter-section-title {
+    grid-column: 1 / -1;
+    font-size: 0.9rem;
+    color: #777;
+    margin: 15px 0 5px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
 }
 
 .chapter-card {
     background: white;
     border: 2px solid #e5e5e5;
     border-bottom: 5px solid #e5e5e5;
-    border-radius: 20px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 12px 8px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
@@ -136,9 +148,9 @@ body {
     transform: translateY(4px);
     border-bottom-width: 1px;
 }
-.chapter-card h3 { margin: 10px 0 5px; font-size: 1.2rem; }
-.chapter-card p { margin: 0; color: #888; font-size: 0.9rem; }
-.chapter-icon { font-size: 2.5rem; display: block; }
+.chapter-card h3 { margin: 8px 0 4px; font-size: 0.95rem; }
+.chapter-card p { margin: 0; color: #888; font-size: 0.75rem; }
+.chapter-icon { font-size: 1.8rem; display: block; }
 
 /* --- 游戏区布局 --- */
 .question-area {
@@ -224,3 +236,15 @@ body {
 .feedback-overlay.show { transform: translateY(0); }
 .feedback-correct { background: #d7ffb8; color: #58a700; }
 .feedback-wrong { background: #ffdfe0; color: #ea2b2b; }
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+.countdown-warning { background: #ffc107 !important; }
+.countdown-danger { 
+    background: #ff4b4b !important; 
+    animation: shake 0.2s ease-in-out infinite;
+}

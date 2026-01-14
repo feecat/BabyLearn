@@ -18,6 +18,9 @@
                     <div id="progress" style="background:#58cc02; width:0%; height:100%; transition:width 0.5s;"></div>
                 </div>
             </div>
+            <div id="countdown-bar-bg" style="display:none; height:8px; background:#e5e5e5; border-radius:4px; overflow:hidden; margin-top:5px;">
+                <div id="countdown-bar" style="background:#58cc02; width:100%; height:100%; transition:background 0.3s;"></div>
+            </div>
         </header>
 
         <!-- 1. 设置/章节选择界面 -->
@@ -42,16 +45,45 @@
                         <div class="toggle-btn" id="mode-input" onclick="toggleMode('input')">键盘输入</div>
                     </div>
                 </div>
-                <p style="font-size:0.8rem; color:#888; margin:0; text-align:right;">* 可多选，多选时混合出题</p>
+                
+                <div class="control-row">
+                    <label>⏱️ 倒计时</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <div class="toggle-btn" id="countdown-toggle" onclick="toggleCountdown()">关闭</div>
+                        <div id="countdown-seconds" style="display:flex; gap:5px; align-items:center;">
+                            <span style="font-size:0.9rem;">秒:</span>
+                            <button class="btn" style="width:30px; padding:3px;" onclick="adjustCountdownSeconds(-5)">-</button>
+                            <span id="countdown-display" style="font-size:1rem; font-weight:bold; min-width:30px; text-align:center;">10</span>
+                            <button class="btn" style="width:30px; padding:3px;" onclick="adjustCountdownSeconds(5)">+</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <h3 style="margin-left: 10px;">选择章节开始：</h3>
-            <!-- 平铺章节列表 -->
             <div class="chapter-grid">
+                <div class="chapter-section-title">数字基础</div>
+                <div class="chapter-card" onclick="game.start(0)">
+                    <span class="chapter-icon">🍎</span>
+                    <h3>数字象形</h3>
+                    <p>数苹果香蕉数量</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(-1)">
+                    <span class="chapter-icon">🍎🍌</span>
+                    <h3>数字加减</h3>
+                    <p>看图算加减结果</p>
+                </div>
                 <div class="chapter-card" onclick="game.start(1)">
                     <span class="chapter-icon">⚖️</span>
                     <h3>数字比大小</h3>
                     <p>认识大于、小于、等于</p>
+                </div>
+
+                <div class="chapter-section-title">加减运算</div>
+                <div class="chapter-card" onclick="game.start(4)">
+                    <span class="chapter-icon">🔄</span>
+                    <h3>10以内加减复合</h3>
+                    <p>填空与比大小综合</p>
                 </div>
                 <div class="chapter-card" onclick="game.start(2)">
                     <span class="chapter-icon">➕</span>
@@ -63,10 +95,67 @@
                     <h3>10以内减法</h3>
                     <p>基础减法练习</p>
                 </div>
-                <div class="chapter-card" onclick="game.start(4)">
-                    <span class="chapter-icon">🧮</span>
-                    <h3>20以内混合</h3>
+                <div class="chapter-card" onclick="game.start(7)">
+                    <span class="chapter-icon">🔄</span>
+                    <h3>20以内加减复合</h3>
                     <p>加减法综合挑战</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(5)">
+                    <span class="chapter-icon">➕</span>
+                    <h3>20以内加法</h3>
+                    <p>20以内加法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(6)">
+                    <span class="chapter-icon">➖</span>
+                    <h3>20以内减法</h3>
+                    <p>20以内减法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(10)">
+                    <span class="chapter-icon">🔄</span>
+                    <h3>100以内加减复合</h3>
+                    <p>100以内加减综合</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(8)">
+                    <span class="chapter-icon">➕</span>
+                    <h3>100以内加法</h3>
+                    <p>100以内加法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(9)">
+                    <span class="chapter-icon">➖</span>
+                    <h3>100以内减法</h3>
+                    <p>100以内减法练习</p>
+                </div>
+
+                <div class="chapter-section-title">乘除运算</div>
+                <div class="chapter-card" onclick="game.start(13)">
+                    <span class="chapter-icon">🔄</span>
+                    <h3>10以内乘除复合</h3>
+                    <p>乘除法综合挑战</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(11)">
+                    <span class="chapter-icon">✖️</span>
+                    <h3>10以内乘法</h3>
+                    <p>基础乘法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(12)">
+                    <span class="chapter-icon">➗</span>
+                    <h3>10以内除法</h3>
+                    <p>基础除法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(16)">
+                    <span class="chapter-icon">🔄</span>
+                    <h3>20以内乘除复合</h3>
+                    <p>20以内乘除综合</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(14)">
+                    <span class="chapter-icon">✖️</span>
+                    <h3>20以内乘法</h3>
+                    <p>20以内乘法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(15)">
+                    <span class="chapter-icon">➗</span>
+                    <h3>20以内除法</h3>
+                    <p>20以内除法练习</p>
                 </div>
             </div>
         </div>

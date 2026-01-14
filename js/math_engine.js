@@ -96,7 +96,58 @@ const FX = {
 };
 
 // --- 设置逻辑 ---
-let config = { count: 20, modes: ['choice'] };
+const STORAGE_KEY = 'math_game_settings';
+
+function loadSettings() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            config.count = data.count || 20;
+            config.modes = data.modes || ['choice'];
+            config.countdownEnabled = data.countdownEnabled || false;
+            config.countdownSeconds = data.countdownSeconds || 10;
+        } catch (e) {
+            console.error('Failed to load settings:', e);
+        }
+    }
+}
+
+function saveSettings() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        count: config.count,
+        modes: config.modes,
+        countdownEnabled: config.countdownEnabled,
+        countdownSeconds: config.countdownSeconds
+    }));
+}
+
+function updateSettingsUI() {
+    document.getElementById('q-count-display').innerText = config.count;
+    document.getElementById('countdown-display').innerText = config.countdownSeconds;
+    
+    document.getElementById('mode-choice').classList.toggle('active', config.modes.includes('choice'));
+    document.getElementById('mode-input').classList.toggle('active', config.modes.includes('input'));
+    
+    const countdownToggle = document.getElementById('countdown-toggle');
+    const countdownSeconds = document.getElementById('countdown-seconds');
+    if (config.countdownEnabled) {
+        countdownToggle.innerText = '开启';
+        countdownToggle.classList.add('active');
+        countdownSeconds.style.opacity = '1';
+        countdownSeconds.style.pointerEvents = 'auto';
+    } else {
+        countdownToggle.innerText = '关闭';
+        countdownToggle.classList.remove('active');
+        countdownSeconds.style.opacity = '0.5';
+        countdownSeconds.style.pointerEvents = 'none';
+    }
+}
+
+let config = { count: 20, modes: ['choice'], countdownEnabled: false, countdownSeconds: 10 };
+
+loadSettings();
+updateSettingsUI();
 
 function adjustCount(delta) {
     let newVal = config.count + delta;
@@ -104,6 +155,7 @@ function adjustCount(delta) {
     if (newVal > 100) newVal = 100;
     config.count = newVal;
     document.getElementById('q-count-display').innerText = config.count;
+    saveSettings();
 }
 
 function toggleMode(mode) {
@@ -111,7 +163,7 @@ function toggleMode(mode) {
     const el = document.getElementById('mode-' + mode);
     
     if (idx > -1) {
-        if (config.modes.length > 1) { // 至少保留一个
+        if (config.modes.length > 1) {
             config.modes.splice(idx, 1);
             el.classList.remove('active');
         }
@@ -119,19 +171,50 @@ function toggleMode(mode) {
         config.modes.push(mode);
         el.classList.add('active');
     }
+    saveSettings();
+}
+
+function toggleCountdown() {
+    config.countdownEnabled = !config.countdownEnabled;
+    const toggle = document.getElementById('countdown-toggle');
+    const seconds = document.getElementById('countdown-seconds');
+    
+    if (config.countdownEnabled) {
+        toggle.innerText = '开启';
+        toggle.classList.add('active');
+        seconds.style.opacity = '1';
+        seconds.style.pointerEvents = 'auto';
+    } else {
+        toggle.innerText = '关闭';
+        toggle.classList.remove('active');
+        seconds.style.opacity = '0.5';
+        seconds.style.pointerEvents = 'none';
+    }
+    saveSettings();
+}
+
+function adjustCountdownSeconds(delta) {
+    let newVal = config.countdownSeconds + delta;
+    if (newVal < 5) newVal = 5;
+    if (newVal > 60) newVal = 60;
+    config.countdownSeconds = newVal;
+    document.getElementById('countdown-display').innerText = newVal;
+    saveSettings();
 }
 
 // --- 游戏逻辑 ---
 class MathGame {
     constructor() {
         this.state = {
-            queue: [], // 题目队列
+            queue: [],
             currentIdx: 0,
             score: 0,
             userInput: '',
-            isLocked: false // 防止重复点击
+            isLocked: false
         };
-        
+        this.hideTimer = null;
+        this.countdownTimer = null;
+        this.countdownRemaining = 0;
         this.els = {
             setup: document.getElementById('setup-screen'),
             game: document.getElementById('game-screen'),
@@ -143,7 +226,9 @@ class MathGame {
             inputDisplay: document.getElementById('user-input-display'),
             submitBtn: document.getElementById('submit-btn'),
             feedback: document.getElementById('feedback'),
-            progress: document.getElementById('progress')
+            progress: document.getElementById('progress'),
+            countdownBarBg: document.getElementById('countdown-bar-bg'),
+            countdownBar: document.getElementById('countdown-bar')
         };
     }
 
@@ -152,10 +237,15 @@ class MathGame {
         this.state.currentIdx = 0;
         this.generateQueue(chapterId);
         
-        // 切换界面
         this.els.setup.style.display = 'none';
         this.els.game.style.display = 'flex';
         this.els.header.style.display = 'block';
+        
+        if (config.countdownEnabled) {
+            this.els.countdownBarBg.style.display = 'block';
+        } else {
+            this.els.countdownBarBg.style.display = 'none';
+        }
         
         this.loadCurrentQuestion();
     }
@@ -197,32 +287,313 @@ class MathGame {
         const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         let q = {};
         
-        if (ch === 1) { // 比大小
+        if (ch === 0) { // 数字象形 - 数水果数量
+            const fruits = ['🍎', '🍌', '🍇', '🍊', '🍓', '🍑', '🍒', '🥝'];
+            const count = rand(3, 10);
+            let fruitStr = '';
+            let displayStr = '';
+            for (let i = 0; i < count; i++) {
+                const fruit = fruits[rand(0, fruits.length - 1)];
+                fruitStr += fruit;
+                displayStr += `<span style="font-size:1.5rem;">${fruit}</span>`;
+            }
+            q.text = fruitStr;
+            q.textDisplay = displayStr;
+            q.answer = count.toString();
+            q.type = 'input';
+        } else if (ch === -1) { // 数字加减 - 看图算加减
+            const fruits = ['🍎', '🍌', '🍇', '🍊', '🍓', '🍑', '🍒', '🥝'];
+            const opType = rand(1, 2); // 1=加法, 2=减法
+            const fruit = fruits[rand(0, fruits.length - 1)];
+            
+            if (opType === 1) { // 加法: 🍎🍎 + �� = ?
+                const a = rand(1, 5);
+                const b = rand(1, 5);
+                let left1 = '';
+                for (let i = 0; i < a; i++) left1 += fruit;
+                let left2 = '';
+                for (let i = 0; i < b; i++) left2 += fruit;
+                q.text = `${left1} + ${left2} = ?`;
+                q.textDisplay = `<span style="font-size:1.5rem;">${left1} + ${left2} = ?</span>`;
+                q.answer = (a + b).toString();
+                q.type = 'input';
+            } else { // 减法: 🍎🍎🍎🍎 - 🍎🍎 = ?
+                const a = rand(3, 8);
+                const b = rand(1, a - 1);
+                let left = '';
+                for (let i = 0; i < a; i++) left += fruit;
+                let right = '';
+                for (let i = 0; i < b; i++) right += fruit;
+                q.text = `${left} - ${right} = ?`;
+                q.textDisplay = `<span style="font-size:1.5rem;">${left} - ${right} = ?</span>`;
+                q.answer = (a - b).toString();
+                q.type = 'input';
+            }
+        } else if (ch === 1) { // 数字比大小
             const a = rand(1, 20); const b = rand(1, 20);
             q.text = `${a} ◯ ${b}`;
             q.answer = a === b ? '=' : (a > b ? '>' : '<');
             q.type = 'compare';
-        } else if (ch === 2) { // 加法
+        } else if (ch === 2) { // 10以内加法
             const a = rand(0, 5); const b = rand(0, 5);
             q.text = `${a} + ${b} = ?`;
             q.answer = (a + b).toString();
             q.type = 'math';
-        } else if (ch === 3) { // 减法
+        } else if (ch === 3) { // 10以内减法
             const a = rand(1, 10); const b = rand(0, a);
             q.text = `${a} - ${b} = ?`;
             q.answer = (a - b).toString();
             q.type = 'math';
-        } else { // 混合
-            if (Math.random() > 0.5) {
-                const a = rand(0, 10); const b = rand(0, 10);
-                q.text = `${a} + ${b} = ?`;
-                q.answer = (a+b).toString();
-            } else {
-                const a = rand(5, 20); const b = rand(0, a);
-                q.text = `${a} - ${b} = ?`;
-                q.answer = (a-b).toString();
+        } else if (ch === 4) { // 10以内加减复合
+            const subType = rand(1, 5);
+            if (subType === 1) { // ( ) - b = c
+                const b = rand(1, 9);
+                const c = rand(0, 9 - b);
+                const a = b + c;
+                q.text = `( ) - ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else if (subType === 2) { // a + b = ( )
+                const a = rand(0, 5); const b = rand(0, 5);
+                q.text = `${a} + ${b} = ( )`;
+                q.answer = (a + b).toString();
+                q.type = 'math';
+            } else if (subType === 3) { // a + ( ) = c
+                const a = rand(0, 4); const c = rand(a + 1, 10);
+                const b = c - a;
+                q.text = `${a} + ( ) = ${c}`;
+                q.answer = b.toString();
+                q.type = 'math';
+            } else if (subType === 4) { // a - b ( ) c + d
+                const a = rand(1, 10); const b = rand(0, a);
+                const c = rand(0, 10); const d = rand(0, 10);
+                const left = a - b;
+                const right = c + d;
+                q.text = `${a} - ${b} ◯ ${c} + ${d}`;
+                q.answer = left === right ? '=' : (left > right ? '>' : '<');
+                q.type = 'compare';
+            } else { // a + b ( ) c
+                const a = rand(0, 10); const b = rand(0, 10 - a);
+                const c = rand(0, 10);
+                const left = a + b;
+                q.text = `${a} + ${b} ◯ ${c}`;
+                q.answer = left === c ? '=' : (left > c ? '>' : '<');
+                q.type = 'compare';
             }
+        } else if (ch === 5) { // 20以内加法
+            const a = rand(0, 10); const b = rand(0, 20 - a);
+            q.text = `${a} + ${b} = ?`;
+            q.answer = (a + b).toString();
             q.type = 'math';
+        } else if (ch === 6) { // 20以内减法
+            const a = rand(10, 20); const b = rand(0, a);
+            q.text = `${a} - ${b} = ?`;
+            q.answer = (a - b).toString();
+            q.type = 'math';
+        } else if (ch === 7) { // 20以内加减复合
+            const subType = rand(1, 6);
+            if (subType === 1) { // ( ) - b = c
+                const b = rand(1, 15);
+                const c = rand(0, 20 - b);
+                const a = b + c;
+                q.text = `( ) - ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else if (subType === 2) { // a + b = ( )
+                const a = rand(0, 10); const b = rand(0, 20 - a);
+                q.text = `${a} + ${b} = ( )`;
+                q.answer = (a + b).toString();
+                q.type = 'math';
+            } else if (subType === 3) { // a + ( ) = c
+                const a = rand(0, 10); const c = rand(a, 20);
+                const b = c - a;
+                q.text = `${a} + ( ) = ${c}`;
+                q.answer = b.toString();
+                q.type = 'math';
+            } else if (subType === 4) { // a - b ( ) c + d
+                const a = rand(5, 20); const b = rand(0, a);
+                const c = rand(0, 15); const d = rand(0, 20 - c);
+                const left = a - b;
+                const right = c + d;
+                q.text = `${a} - ${b} ◯ ${c} + ${d}`;
+                q.answer = left === right ? '=' : (left > right ? '>' : '<');
+                q.type = 'compare';
+            } else if (subType === 5) { // a - b = ( )
+                const a = rand(10, 20); const b = rand(0, a);
+                q.text = `${a} - ${b} = ( )`;
+                q.answer = (a - b).toString();
+                q.type = 'math';
+            } else { // ( ) - b = c (另一形式)
+                const a = rand(10, 20); const b = rand(1, a);
+                const c = rand(0, a - b);
+                q.text = `${a} - ${b} = ( )`;
+                q.answer = c.toString();
+                q.type = 'math';
+            }
+        } else if (ch === 8) { // 100以内加法
+            const a = rand(0, 50); const b = rand(0, 100 - a);
+            q.text = `${a} + ${b} = ?`;
+            q.answer = (a + b).toString();
+            q.type = 'math';
+        } else if (ch === 9) { // 100以内减法
+            const a = rand(20, 100); const b = rand(0, a);
+            q.text = `${a} - ${b} = ?`;
+            q.answer = (a - b).toString();
+            q.type = 'math';
+        } else if (ch === 10) { // 100以内加减复合
+            const subType = rand(1, 6);
+            if (subType === 1) { // ( ) - b = c
+                const b = rand(1, 50);
+                const c = rand(0, 100 - b);
+                const a = b + c;
+                q.text = `( ) - ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else if (subType === 2) { // a + b = ( )
+                const a = rand(0, 50); const b = rand(0, 100 - a);
+                q.text = `${a} + ${b} = ( )`;
+                q.answer = (a + b).toString();
+                q.type = 'math';
+            } else if (subType === 3) { // a - b = ( )
+                const a = rand(20, 100); const b = rand(0, a);
+                q.text = `${a} - ${b} = ( )`;
+                q.answer = (a - b).toString();
+                q.type = 'math';
+            } else if (subType === 4) { // a + ( ) = c
+                const a = rand(0, 50); const c = rand(a, 100);
+                const b = c - a;
+                q.text = `${a} + ( ) = ${c}`;
+                q.answer = b.toString();
+                q.type = 'math';
+            } else if (subType === 5) { // ( ) + b = c
+                const b = rand(0, 50); const c = rand(b, 100);
+                const a = c - b;
+                q.text = `( ) + ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else { // a - b ( ) c + d
+                const a = rand(20, 100); const b = rand(0, a);
+                const c = rand(0, 50); const d = rand(0, 100 - c);
+                const left = a - b;
+                const right = c + d;
+                q.text = `${a} - ${b} ◯ ${c} + ${d}`;
+                q.answer = left === right ? '=' : (left > right ? '>' : '<');
+                q.type = 'compare';
+            }
+        } else if (ch === 11) { // 10以内乘法
+            const a = rand(1, 10);
+            const b = rand(1, Math.min(10, Math.floor(100 / a)));
+            q.text = `${a} × ${b} = ?`;
+            q.answer = (a * b).toString();
+            q.type = 'math';
+        } else if (ch === 12) { // 10以内除法
+            const b = rand(1, 10);
+            const c = rand(1, 10);
+            const a = b * c;
+            q.text = `${a} ÷ ${b} = ?`;
+            q.answer = c.toString();
+            q.type = 'math';
+        } else if (ch === 13) { // 10以内乘除复合
+            const subType = rand(1, 6);
+            if (subType === 1) { // a × b = ( )
+                const a = rand(1, 10);
+                const b = rand(1, Math.min(10, Math.floor(100 / a)));
+                q.text = `${a} × ${b} = ( )`;
+                q.answer = (a * b).toString();
+                q.type = 'math';
+            } else if (subType === 2) { // ( ) × b = c
+                const b = rand(1, 10);
+                const c = rand(1, Math.min(10, Math.floor(100 / b)));
+                const a = c / b;
+                q.text = `( ) × ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else if (subType === 3) { // a × ( ) = c
+                const a = rand(1, 10);
+                const c = rand(1, Math.min(10, Math.floor(100 / a)));
+                const b = c / a;
+                q.text = `${a} × ( ) = ${c}`;
+                q.answer = b.toString();
+                q.type = 'math';
+            } else if (subType === 4) { // a ÷ b = ( )
+                const b = rand(1, 10);
+                const c = rand(1, 10);
+                const a = b * c;
+                q.text = `${a} ÷ ${b} = ( )`;
+                q.answer = c.toString();
+                q.type = 'math';
+            } else if (subType === 5) { // ( ) ÷ b = c
+                const b = rand(1, 10);
+                const c = rand(1, 10);
+                const a = b * c;
+                q.text = `( ) ÷ ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else { // a ÷ ( ) = c
+                const c = rand(1, 10);
+                const a = rand(c, 100);
+                const b = a / c;
+                q.text = `${a} ÷ ( ) = ${c}`;
+                q.answer = b.toString();
+                q.type = 'math';
+            }
+        } else if (ch === 14) { // 20以内乘法
+            const a = rand(1, 20);
+            const b = rand(1, Math.min(20, Math.floor(100 / a)));
+            q.text = `${a} × ${b} = ?`;
+            q.answer = (a * b).toString();
+            q.type = 'math';
+        } else if (ch === 15) { // 20以内除法
+            const b = rand(1, 20);
+            const c = rand(1, Math.floor(100 / b));
+            const a = b * c;
+            q.text = `${a} ÷ ${b} = ?`;
+            q.answer = c.toString();
+            q.type = 'math';
+        } else if (ch === 16) { // 20以内乘除复合
+            const subType = rand(1, 6);
+            if (subType === 1) { // a × b = ( )
+                const a = rand(1, 20);
+                const b = rand(1, Math.min(20, Math.floor(100 / a)));
+                q.text = `${a} × ${b} = ( )`;
+                q.answer = (a * b).toString();
+                q.type = 'math';
+            } else if (subType === 2) { // ( ) × b = c
+                const b = rand(1, 20);
+                const c = rand(1, Math.min(20, Math.floor(100 / b)));
+                const a = c / b;
+                q.text = `( ) × ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else if (subType === 3) { // a × ( ) = c
+                const a = rand(1, 20);
+                const c = rand(1, Math.min(20, Math.floor(100 / a)));
+                const b = c / a;
+                q.text = `${a} × ( ) = ${c}`;
+                q.answer = b.toString();
+                q.type = 'math';
+            } else if (subType === 4) { // a ÷ b = ( )
+                const b = rand(1, 20);
+                const c = rand(1, Math.floor(100 / b));
+                const a = b * c;
+                q.text = `${a} ÷ ${b} = ( )`;
+                q.answer = c.toString();
+                q.type = 'math';
+            } else if (subType === 5) { // ( ) ÷ b = c
+                const b = rand(1, 20);
+                const c = rand(1, Math.floor(100 / b));
+                const a = b * c;
+                q.text = `( ) ÷ ${b} = ${c}`;
+                q.answer = a.toString();
+                q.type = 'math';
+            } else { // a ÷ ( ) = c
+                const c = rand(1, 20);
+                const a = rand(c, 100);
+                const b = a / c;
+                q.text = `${a} ÷ ( ) = ${c}`;
+                q.answer = b.toString();
+                q.type = 'math';
+            }
         }
         return q;
     }
@@ -238,7 +609,11 @@ class MathGame {
         this.state.isLocked = false;
         
         // 更新UI
-        this.els.question.innerText = q.text;
+        if (q.textDisplay) {
+            this.els.question.innerHTML = q.textDisplay;
+        } else {
+            this.els.question.innerText = q.text;
+        }
         const pct = (this.state.currentIdx / config.count) * 100;
         this.els.progress.style.width = `${pct}%`;
         
@@ -247,6 +622,10 @@ class MathGame {
             this.setupChoiceMode(q);
         } else {
             this.setupInputMode(q);
+        }
+        
+        if (config.countdownEnabled) {
+            this.startCountdown();
         }
     }
 
@@ -312,6 +691,42 @@ class MathGame {
         });
     }
 
+    startCountdown() {
+        this.stopCountdown();
+        this.countdownRemaining = config.countdownSeconds;
+        const total = config.countdownSeconds;
+        this.els.countdownBar.style.width = '100%';
+        this.els.countdownBar.className = '';
+        
+        this.countdownTimer = setInterval(() => {
+            this.countdownRemaining -= 0.1;
+            const pct = (this.countdownRemaining / total) * 100;
+            this.els.countdownBar.style.width = `${pct}%`;
+            
+            if (this.countdownRemaining <= 3) {
+                this.els.countdownBar.className = 'countdown-danger';
+            } else if (this.countdownRemaining <= 5) {
+                this.els.countdownBar.className = 'countdown-warning';
+            } else {
+                this.els.countdownBar.className = '';
+            }
+            
+            if (this.countdownRemaining <= 0) {
+                this.stopCountdown();
+                if (!this.state.isLocked) {
+                    this.checkAnswer(null);
+                }
+            }
+        }, 100);
+    }
+
+    stopCountdown() {
+        if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+        }
+    }
+
     checkInputAnswer() {
         if (!this.state.userInput) return;
         this.checkAnswer(this.state.userInput);
@@ -319,12 +734,13 @@ class MathGame {
 
     checkAnswer(val) {
         if (this.state.isLocked) return;
-        this.state.isLocked = true; // 锁定防止连点
+        this.state.isLocked = true;
+        this.stopCountdown();
 
         const q = this.state.queue[this.state.currentIdx];
-        const isCorrect = val === q.answer;
+        const isTimeout = val === null;
+        const isCorrect = !isTimeout && val === q.answer;
         
-        // 播放简单音效
         this.playSound(isCorrect);
 
         const fbTitle = document.getElementById('feedback-title');
@@ -339,16 +755,32 @@ class MathGame {
             nextBtn.style.color = "#58a700";
         } else {
             this.els.feedback.className = 'feedback-overlay show feedback-wrong';
-            fbTitle.innerText = "答错了 😕";
-            fbDetail.innerText = `正确答案是: ${q.answer}`;
+            if (isTimeout) {
+                fbTitle.innerText = "时间到！⏰";
+                fbDetail.innerText = `正确答案是: ${q.answer}`;
+            } else {
+                fbTitle.innerText = "答错了 😕";
+                fbDetail.innerText = `正确答案是: ${q.answer}`;
+            }
             nextBtn.style.color = "#ea2b2b";
         }
+
+        if (this.hideTimer) clearTimeout(this.hideTimer);
+        this.hideTimer = setTimeout(() => this.nextQuestion(), 800);
+        
+        document.addEventListener('click', this.hideFeedbackHandler = (e) => {
+            if (!e.target.closest('#next-btn') && !e.target.closest('.btn-choice')) {
+                this.nextQuestion();
+            }
+        });
     }
     
     nextQuestion() {
+        if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = null; }
+        this.stopCountdown();
+        document.removeEventListener('click', this.hideFeedbackHandler);
         this.els.feedback.classList.remove('show');
         this.state.currentIdx++;
-        // 延迟一点加载下一题，让反馈条收回去的动画顺滑
         setTimeout(() => this.loadCurrentQuestion(), 300);
     }
 
