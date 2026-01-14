@@ -170,24 +170,36 @@ body {
 .chapter-icon { font-size: 1.8rem; display: block; }
 
 /* --- 游戏区布局 --- */
+.game-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    max-height: 600px;
+    overflow: hidden;
+}
+
 .question-area {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 3.5rem; /* 字体加大 */
+    font-size: clamp(2rem, 6vw, 3.5rem);
     font-weight: 800;
-    margin: 20px 0;
-    min-height: 150px;
+    margin: 10px 0;
+    min-height: 100px;
+    max-height: 180px;
+    overflow: hidden;
+    word-break: break-word;
 }
 
 /* 选项网格 */
 .options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px; /* 增加间距 */
+    gap: 12px;
     width: 100%;
-    margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
 .btn-choice {
