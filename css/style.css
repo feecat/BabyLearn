@@ -1,0 +1,226 @@
+:root {
+    --primary-color: #58cc02;
+    --primary-shadow: #58a700;
+    --secondary-color: #1cb0f6; /* 蓝色用于输入模式 */
+    --secondary-shadow: #1899d6;
+    --bg-color: #f7f7f7;
+    --text-color: #4b4b4b;
+    --btn-radius: 16px;
+}
+
+* {
+    box-sizing: border-box; /* 关键：防止padding撑大元素导致重叠 */
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Nunito', 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 2;
+}
+
+/* --- 按钮基础修复 --- */
+.btn {
+    background: white;
+    border: 2px solid #e5e5e5;
+    border-bottom: 5px solid #e5e5e5; /* 增加厚度 */
+    border-radius: var(--btn-radius);
+    padding: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s, border-bottom-width 0.1s;
+    color: var(--text-color);
+    text-align: center;
+    user-select: none;
+    margin-bottom: 0; /* 让Grid gap控制间距，移除默认margin */
+    width: 100%;
+    position: relative;
+}
+
+.btn:active {
+    transform: translateY(3px);
+    border-bottom-width: 2px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-shadow);
+    color: white;
+}
+
+/* --- 设置页布局优化 --- */
+.setup-header {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+}
+
+.control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.control-row label {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+/* 模式切换按钮组 */
+.toggle-group {
+    display: flex;
+    gap: 10px;
+}
+
+.toggle-btn {
+    border: 2px solid #e5e5e5;
+    padding: 8px 15px;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #999;
+}
+
+.toggle-btn.active {
+    background: #ddf4ff;
+    border-color: #1cb0f6;
+    color: #1cb0f6;
+    font-weight: bold;
+}
+
+/* 章节卡片网格 */
+.chapter-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* 手机单列 */
+    gap: 15px;
+    padding-bottom: 40px;
+}
+@media (min-width: 400px) {
+    .chapter-grid { grid-template-columns: 1fr 1fr; } /* 平板/电脑双列 */
+}
+
+.chapter-card {
+    background: white;
+    border: 2px solid #e5e5e5;
+    border-bottom: 5px solid #e5e5e5;
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.chapter-card:active {
+    transform: translateY(4px);
+    border-bottom-width: 1px;
+}
+.chapter-card h3 { margin: 10px 0 5px; font-size: 1.2rem; }
+.chapter-card p { margin: 0; color: #888; font-size: 0.9rem; }
+.chapter-icon { font-size: 2.5rem; display: block; }
+
+/* --- 游戏区布局 --- */
+.question-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3.5rem; /* 字体加大 */
+    font-weight: 800;
+    margin: 20px 0;
+    min-height: 150px;
+}
+
+/* 选项网格 */
+.options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px; /* 增加间距 */
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.btn-choice {
+    font-size: 2rem;
+    padding: 20px 0; /* 增加点击区域 */
+    height: 100%;
+}
+
+/* 键盘布局 */
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* 显示框 */
+.display-box {
+    border: 3px solid #e5e5e5;
+    border-radius: 16px;
+    height: 70px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    background: white;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* --- 特效层 --- */
+#effects-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* 在背景之上，内容之下 */
+    pointer-events: none;
+}
+
+/* 结算页表情 */
+.result-emoji { font-size: 5rem; display: block; margin-bottom: 10px; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+/* 反馈条 */
+.feedback-overlay {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px;
+    text-align: center;
+    transform: translateY(110%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.feedback-overlay.show { transform: translateY(0); }
+.feedback-correct { background: #d7ffb8; color: #58a700; }
+.feedback-wrong { background: #ffdfe0; color: #ea2b2b; }

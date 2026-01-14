@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数学挑战</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <canvas id="effects-canvas"></canvas>
+
+    <div class="container" id="app-container">
+        <!-- 顶部导航 -->
+        <header id="game-header" style="display:none;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button onclick="location.reload()" class="btn" style="width: auto; padding: 5px 12px; border-bottom-width:3px;">✕</button>
+                <div class="progress-bar-bg" style="flex:1; background:#e5e5e5; height:16px; border-radius:8px; overflow:hidden;">
+                    <div id="progress" style="background:#58cc02; width:0%; height:100%; transition:width 0.5s;"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 1. 设置/章节选择界面 -->
+        <div id="setup-screen">
+            <h1 style="text-align: center; margin-bottom: 20px;">🎓 数学乐园</h1>
+            
+            <!-- 顶部控制区 -->
+            <div class="setup-header">
+                <div class="control-row">
+                    <label>📝 题目数量</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button class="btn" style="width:40px; padding:5px;" onclick="adjustCount(-10)">-</button>
+                        <span id="q-count-display" style="font-size:1.2rem; font-weight:bold; min-width:40px; text-align:center;">20</span>
+                        <button class="btn" style="width:40px; padding:5px;" onclick="adjustCount(10)">+</button>
+                    </div>
+                </div>
+                
+                <div class="control-row">
+                    <label>🎮 答题模式</label>
+                    <div class="toggle-group">
+                        <div class="toggle-btn active" id="mode-choice" onclick="toggleMode('choice')">选择题</div>
+                        <div class="toggle-btn" id="mode-input" onclick="toggleMode('input')">键盘输入</div>
+                    </div>
+                </div>
+                <p style="font-size:0.8rem; color:#888; margin:0; text-align:right;">* 可多选，多选时混合出题</p>
+            </div>
+
+            <h3 style="margin-left: 10px;">选择章节开始：</h3>
+            <!-- 平铺章节列表 -->
+            <div class="chapter-grid">
+                <div class="chapter-card" onclick="game.start(1)">
+                    <span class="chapter-icon">⚖️</span>
+                    <h3>数字比大小</h3>
+                    <p>认识大于、小于、等于</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(2)">
+                    <span class="chapter-icon">➕</span>
+                    <h3>10以内加法</h3>
+                    <p>基础加法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(3)">
+                    <span class="chapter-icon">➖</span>
+                    <h3>10以内减法</h3>
+                    <p>基础减法练习</p>
+                </div>
+                <div class="chapter-card" onclick="game.start(4)">
+                    <span class="chapter-icon">🧮</span>
+                    <h3>20以内混合</h3>
+                    <p>加减法综合挑战</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 游戏进行界面 -->
+        <div id="game-screen" style="display: none; flex: 1; flex-direction: column;">
+            <div class="question-area" id="question-text"></div>
+
+            <!-- 输入框 -->
+            <div id="input-area" style="display:none; width:100%;">
+                <div class="display-box" id="user-input-display"></div>
+            </div>
+
+            <!-- 底部操作区 -->
+            <div style="margin-top: auto;">
+                <div id="options-area" class="options-grid"></div>
+                <div id="keypad-area" class="keypad" style="display:none;"></div>
+                <button id="submit-btn" class="btn btn-primary" style="display:none; margin-top:10px;" onclick="game.checkInputAnswer()">确认提交</button>
+            </div>
+        </div>
+        
+        <!-- 3. 结算界面 -->
+        <div id="result-screen" style="display: none; text-align: center; padding-top: 40px;">
+            <span id="result-emoji" class="result-emoji">🎉</span>
+            <h1 id="result-title">挑战完成!</h1>
+            <div style="font-size: 1.5rem; margin: 20px 0; padding: 20px; background: white; border-radius: 16px;">
+                得分: <span id="final-score" style="color:var(--primary-color); font-weight:bold;"></span>
+            </div>
+            <button class="btn btn-primary" onclick="location.reload()">再玩一次</button>
+            <br><br>
+            <button class="btn" onclick="location.href='index.html'">返回主页</button>
+        </div>
+    </div>
+
+    <!-- 底部反馈条 -->
+    <div id="feedback" class="feedback-overlay">
+        <div style="flex:1; text-align:left;">
+            <h2 id="feedback-title" style="margin:0; font-size:1.2rem;">正确</h2>
+            <span id="feedback-detail" style="font-size:0.9rem;"></span>
+        </div>
+        <button id="next-btn" class="btn" style="width: auto; padding: 10px 25px; margin:0; background:white; border-bottom-width:3px;" onclick="game.nextQuestion()">继续</button>
+    </div>
+
+    <script src="js/math_engine.js"></script>
+</body>
+</html>
