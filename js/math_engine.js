@@ -353,26 +353,11 @@ class MathGame {
     }
 
     playSound(correct) {
-        // 使用 AudioContext 生成简单的 Beep 声，避免加载外部文件
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        
-        if (correct) {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587, ctx.currentTime); // High pitch
-            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-        } else {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(200, ctx.currentTime); // Low pitch
-            osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.2);
+        const audio = correct ? document.getElementById('audio-right') : document.getElementById('audio-wrong');
+        if (audio) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
         }
-        
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        osc.stop(ctx.currentTime + 0.3);
     }
 
     endGame() {
@@ -390,21 +375,23 @@ class MathGame {
         const titleEl = document.getElementById('result-title');
         
         // 视觉反馈逻辑
-        if (pct === 1) {
-            emojiEl.innerText = '🏆';
-            titleEl.innerText = '完美通关！';
-            FX.startFireworks(); // 烟花
-        } else if (pct >= 0.8) {
-            emojiEl.innerText = '🎉';
-            titleEl.innerText = '表现优异！';
-            FX.startFireworks(); // 少量烟花
+        if (pct >= 0.9) {
+            emojiEl.innerText = pct === 1 ? '🏆' : '🎉';
+            titleEl.innerText = pct === 1 ? '完美通关！' : '表现优异！';
+            FX.startFireworks();
+            const audio = document.getElementById('audio-complete');
+            if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
         } else if (pct >= 0.6) {
             emojiEl.innerText = '😃';
             titleEl.innerText = '还不错哦';
+            const audio = document.getElementById('audio-mid');
+            if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
         } else {
             emojiEl.innerText = '🌧️';
             titleEl.innerText = '继续加油...';
-            FX.startRain(); // 下雨
+            FX.startRain();
+            const audio = document.getElementById('audio-failed');
+            if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
         }
     }
 }
