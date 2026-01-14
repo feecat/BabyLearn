@@ -560,15 +560,15 @@ class MathGame {
                 q.type = 'math';
             } else if (subType === 2) { // ( ) × b = c
                 const b = rand(1, 20);
-                const c = rand(1, Math.min(20, Math.floor(100 / b)));
-                const a = c / b;
+                const a = rand(1, 20);
+                const c = a * b;
                 q.text = `( ) × ${b} = ${c}`;
                 q.answer = a.toString();
                 q.type = 'math';
             } else if (subType === 3) { // a × ( ) = c
                 const a = rand(1, 20);
-                const c = rand(1, Math.min(20, Math.floor(100 / a)));
-                const b = c / a;
+                const b = rand(1, 20);
+                const c = a * b;
                 q.text = `${a} × ( ) = ${c}`;
                 q.answer = b.toString();
                 q.type = 'math';
@@ -587,9 +587,9 @@ class MathGame {
                 q.answer = a.toString();
                 q.type = 'math';
             } else { // a ÷ ( ) = c
+                const b = rand(1, 20);
                 const c = rand(1, 20);
-                const a = rand(c, 100);
-                const b = a / c;
+                const a = b * c;
                 q.text = `${a} ÷ ( ) = ${c}`;
                 q.answer = b.toString();
                 q.type = 'math';
