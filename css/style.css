@@ -111,6 +111,23 @@ body {
     font-weight: bold;
 }
 
+.radio-btn {
+    border: 2px solid #e5e5e5;
+    padding: 8px 15px;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #999;
+}
+
+.radio-btn.active {
+    background: #ddf4ff;
+    border-color: #1cb0f6;
+    color: #1cb0f6;
+    font-weight: bold;
+}
+
 /* 章节卡片网格 */
 .chapter-grid {
     display: grid;

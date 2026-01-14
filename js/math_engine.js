@@ -104,7 +104,7 @@ function loadSettings() {
         try {
             const data = JSON.parse(saved);
             config.count = data.count || 20;
-            config.modes = data.modes || ['choice'];
+            config.mode = data.mode || 'choice';
             config.countdownEnabled = data.countdownEnabled || false;
             config.countdownSeconds = data.countdownSeconds || 10;
         } catch (e) {
@@ -116,7 +116,7 @@ function loadSettings() {
 function saveSettings() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
         count: config.count,
-        modes: config.modes,
+        mode: config.mode,
         countdownEnabled: config.countdownEnabled,
         countdownSeconds: config.countdownSeconds
     }));
@@ -126,8 +126,8 @@ function updateSettingsUI() {
     document.getElementById('q-count-display').innerText = config.count;
     document.getElementById('countdown-display').innerText = config.countdownSeconds;
     
-    document.getElementById('mode-choice').classList.toggle('active', config.modes.includes('choice'));
-    document.getElementById('mode-input').classList.toggle('active', config.modes.includes('input'));
+    document.getElementById('mode-choice').classList.toggle('active', config.mode === 'choice');
+    document.getElementById('mode-input').classList.toggle('active', config.mode === 'input');
     
     const countdownToggle = document.getElementById('countdown-toggle');
     const countdownSeconds = document.getElementById('countdown-seconds');
@@ -144,7 +144,7 @@ function updateSettingsUI() {
     }
 }
 
-let config = { count: 20, modes: ['choice'], countdownEnabled: false, countdownSeconds: 10 };
+let config = { count: 20, mode: 'choice', countdownEnabled: false, countdownSeconds: 10 };
 
 loadSettings();
 updateSettingsUI();
@@ -158,19 +158,11 @@ function adjustCount(delta) {
     saveSettings();
 }
 
-function toggleMode(mode) {
-    const idx = config.modes.indexOf(mode);
-    const el = document.getElementById('mode-' + mode);
-    
-    if (idx > -1) {
-        if (config.modes.length > 1) {
-            config.modes.splice(idx, 1);
-            el.classList.remove('active');
-        }
-    } else {
-        config.modes.push(mode);
-        el.classList.add('active');
-    }
+function setMode(mode) {
+    config.mode = mode;
+    document.getElementById('mode-choice').classList.remove('active');
+    document.getElementById('mode-input').classList.remove('active');
+    document.getElementById('mode-' + mode).classList.add('active');
     saveSettings();
 }
 
@@ -250,37 +242,19 @@ class MathGame {
         this.loadCurrentQuestion();
     }
 
-    // 生成题目队列（含混合模式算法）
+    // 生成题目队列
     generateQueue(chapterId) {
         this.state.queue = [];
         const total = config.count;
-        const modes = config.modes;
         
-        // 1. 生成所有题目数据
+        // 生成所有题目数据
         for (let i = 0; i < total; i++) {
             this.state.queue.push(this.createProblem(chapterId));
         }
 
-        // 2. 分配答题模式 (Block Randomization)
-        // 如果只有一个模式，全部统一
-        if (modes.length === 1) {
-            this.state.queue.forEach(q => q.mode = modes[0]);
-        } else {
-            // 混合模式：切分成若干块，每块长度 4~8
-            let assignedCount = 0;
-            while (assignedCount < total) {
-                let blockSize = Math.floor(Math.random() * 5) + 4; // 4到8之间
-                if (assignedCount + blockSize > total) blockSize = total - assignedCount;
-                
-                // 这一块用什么模式？随机选一个
-                const blockMode = modes[Math.floor(Math.random() * modes.length)];
-                
-                for (let j = 0; j < blockSize; j++) {
-                    this.state.queue[assignedCount + j].mode = blockMode;
-                }
-                assignedCount += blockSize;
-            }
-        }
+        // 分配答题模式
+        const mode = config.mode;
+        this.state.queue.forEach(q => q.mode = mode);
     }
 
     createProblem(ch) {
